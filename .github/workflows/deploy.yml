@@ -26,6 +26,8 @@ jobs:
       run: |
         touch .env
         echo SEOUL_API_KEY=${{ secrets.SEOUL_API_KEY }} >> .env
+        echo WHAT3WORDS_API_KEY=${{ secrets.WHAT3WORDS_API_KEY }} >> .env
+        echo KAKAO_MAP_API_KEY=${{ secrets.KAKAO_MAP_API_KEY }} >> .env
       
     - name: Build Project
       run: npm run build
