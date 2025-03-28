@@ -24,6 +24,9 @@ jobs:
       
     - name: Create configs
       run: |
+        # public 디렉토리 확인 또는 생성
+        mkdir -p public
+        
         # config.js 파일 생성
         echo "// 자동 생성된 설정 파일 - 수정하지 마세요" > public/config.js
         echo "const KAKAO_MAP_API_KEY = '${{ secrets.KAKAO_MAP_API_KEY }}';" >> public/config.js
