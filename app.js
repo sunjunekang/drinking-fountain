@@ -20,6 +20,20 @@ document.addEventListener('DOMContentLoaded', function() {
         debugStatus.innerHTML = "카카오맵 스크립트 로딩 중...";
     }
     
+    // API 키 검증
+    if (typeof KAKAO_MAP_API_KEY === 'undefined' || KAKAO_MAP_API_KEY === '__KAKAO_MAP_API_KEY__') {
+        console.error("카카오맵 API 키가 설정되지 않았습니다");
+        updateDebugStatus("API 키 오류: 카카오맵 API 키가 설정되지 않았습니다. config.js 파일을 확인하세요.");
+        return;
+    }
+    
+    // API 키 디버그 정보 업데이트 (보안을 위해 일부만 표시)
+    const apiKey = KAKAO_MAP_API_KEY;
+    const apiKeyDebug = document.getElementById('api-key-debug');
+    if (apiKeyDebug) {
+        apiKeyDebug.textContent = `API 키: ${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)} (${apiKey.length}자)`;
+    }
+    
     // 카카오맵 스크립트 동적 로드
     loadKakaoMapScript(KAKAO_MAP_API_KEY);
 });
@@ -179,29 +193,82 @@ function initMap() {
             
             // 위치 정보 확인 여부와 관계없이 음수대 정보 로드 시작
             loadDemoFountains();
+
+            // 지도를 클릭했을 때 인포윈도우 닫기
+            kakao.maps.event.addListener(map, 'click', function() {
+                if (currentInfoWindow) {
+                    currentInfoWindow.close();
+                    currentInfoWindow = null;
+                }
+                
+                // 선택된 마커 초기화
+                if (selectedMarker) {
+                    selectedMarker.setImage(defaultMarkerImage);
+                    selectedMarker = null;
+                }
+            });
+            
         } catch (error) {
             console.error("지도 초기화 과정에서 오류 발생:", error);
             updateDebugStatus(`지도 초기화 오류: ${error.message}`);
         }
-
-        // 지도를 클릭했을 때 인포윈도우 닫기
-        kakao.maps.event.addListener(map, 'click', function() {
-            if (currentInfoWindow) {
-                currentInfoWindow.close();
-                currentInfoWindow = null;
-            }
-            
-            // 선택된 마커 초기화
-            if (selectedMarker) {
-                selectedMarker.setImage(defaultMarkerImage);
-                selectedMarker = null;
-            }
-        });
         
     } catch (error) {
         console.error("지도 초기화 중 예외가 발생했습니다:", error);
         updateDebugStatus(`지도 초기화 오류: ${error.message}`);
     }
+}
+
+// 마커 클릭 시 인포윈도우 내용 생성 함수
+function createInfoWindowContent(fountain) {
+    // what3words 값 처리
+    let what3wordsDisplay = '';
+
+    console.log("Fountain w3w value:", fountain.what3words);
+    
+    if (fountain.what3words && !fountain.what3words.includes(',') && !fountain.what3words.includes('오류')) {
+        // what3words 주소가 성공적으로 변환된 경우
+        const w3wMapUrl = `https://what3words.com/${fountain.what3words}`;
+        
+        what3wordsDisplay = `
+            <div style="margin:5px 0;">
+                <span style="font-weight:bold;">what3words:</span> 
+                <a href="${w3wMapUrl}" target="_blank" style="color:#4CAF50; font-weight:bold; text-decoration:none;">
+                    ${fountain.what3words}
+                </a>
+            </div>
+        `;
+    } else {
+        // 변환 실패한 경우 좌표 직접 표시
+        const coords = fountain.lat && fountain.lng ? 
+            `${fountain.lat.toFixed(6)}, ${fountain.lng.toFixed(6)}` : 
+            fountain.what3words || '좌표 없음';
+        
+        what3wordsDisplay = `
+            <div style="margin:5px 0;">
+                <span style="font-weight:bold;">위치 좌표:</span> 
+                <span style="color:#1976D2;">${coords}</span>
+            </div>
+        `;
+    }
+    
+    return `
+        <div style="padding:10px;width:250px;font-size:12px;line-height:1.5;">
+            <div style="font-weight:bold;font-size:14px;border-bottom:1px solid #ddd;padding-bottom:8px;margin-bottom:8px;color:#333;">
+                음수대 정보
+            </div>
+            <div style="margin:5px 0;">
+                <span style="font-weight:bold;">이름:</span> ${fountain.name || '정보 없음'}
+            </div>
+            <div style="margin:5px 0;">
+                <span style="font-weight:bold;">주소:</span> ${fountain.address || '정보 없음'}
+            </div>
+            <div style="margin:5px 0;">
+                <span style="font-weight:bold;">상세 위치:</span> ${fountain.location || '정보 없음'}
+            </div>
+            ${what3wordsDisplay}
+        </div>
+    `;
 }
 
 // GitHub Pages에서는 샘플 데이터 사용
@@ -340,6 +407,25 @@ function loadDemoFountains() {
     const validMarkers = markers.length;
     console.log(`총 ${demoFountains.length}개 중 ${validMarkers}개의 음수대에 마커를 표시했습니다.`);
     updateDebugStatus(`지도 로딩 완료! ${validMarkers}개의 음수대 표시됨 (데모 데이터)`);
+}
+
+// 마커 이미지 초기화 함수
+function initMarkerImages() {
+    // 기본 마커 이미지 설정 (기본 마커 사용)
+    defaultMarkerImage = null;  // null은 기본 마커를 의미
+    
+    // 선택된 마커 이미지 설정 (빨간색 마커)
+    const selectedSize = new kakao.maps.Size(24, 35);
+    const selectedOption = { 
+        offset: new kakao.maps.Point(12, 35)
+    };
+    
+    // 선택된 마커는 빨간색 아이콘 사용
+    selectedMarkerImage = new kakao.maps.MarkerImage(
+        'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/markerStar.png',
+        selectedSize,
+        selectedOption
+    );
 }
 
 // 마커 최적화 함수
@@ -632,75 +718,4 @@ function testKakaoMapLoad() {
             }
         }
     }
-}
-
-// 마커 클릭 시 인포윈도우 내용 생성 함수
-function createInfoWindowContent(fountain) {
-    // what3words 값 처리
-    let what3wordsDisplay = '';
-
-    console.log("Fountain w3w value:", fountain.what3words);
-    
-    if (fountain.what3words && !fountain.what3words.includes(',') && !fountain.what3words.includes('오류')) {
-        // what3words 주소가 성공적으로 변환된 경우
-        const w3wMapUrl = `https://what3words.com/${fountain.what3words}`;
-        
-        what3wordsDisplay = `
-            <div style="margin:5px 0;">
-                <span style="font-weight:bold;">what3words:</span> 
-                <a href="${w3wMapUrl}" target="_blank" style="color:#4CAF50; font-weight:bold; text-decoration:none;">
-                    ${fountain.what3words}
-                </a>
-            </div>
-        `;
-    } else {
-        // 변환 실패한 경우 좌표 직접 표시
-        const coords = fountain.lat && fountain.lng ? 
-            `${fountain.lat.toFixed(6)}, ${fountain.lng.toFixed(6)}` : 
-            fountain.what3words || '좌표 없음';
-        
-        what3wordsDisplay = `
-            <div style="margin:5px 0;">
-                <span style="font-weight:bold;">위치 좌표:</span> 
-                <span style="color:#1976D2;">${coords}</span>
-            </div>
-        `;
-    }
-    
-    return `
-        <div style="padding:10px;width:250px;font-size:12px;line-height:1.5;">
-            <div style="font-weight:bold;font-size:14px;border-bottom:1px solid #ddd;padding-bottom:8px;margin-bottom:8px;color:#333;">
-                음수대 정보
-            </div>
-            <div style="margin:5px 0;">
-                <span style="font-weight:bold;">이름:</span> ${fountain.name || '정보 없음'}
-            </div>
-            <div style="margin:5px 0;">
-                <span style="font-weight:bold;">주소:</span> ${fountain.address || '정보 없음'}
-            </div>
-            <div style="margin:5px 0;">
-                <span style="font-weight:bold;">상세 위치:</span> ${fountain.location || '정보 없음'}
-            </div>
-            ${what3wordsDisplay}
-        </div>
-    `;
-}
-
-// 마커 이미지 초기화 함수
-function initMarkerImages() {
-    // 기본 마커 이미지 설정 (기본 마커 사용)
-    defaultMarkerImage = null;  // null은 기본 마커를 의미
-    
-    // 선택된 마커 이미지 설정 (빨간색 마커)
-    const selectedSize = new kakao.maps.Size(24, 35);
-    const selectedOption = { 
-        offset: new kakao.maps.Point(12, 35)
-    };
-    
-    // 선택된 마커는 빨간색 아이콘 사용
-    selectedMarkerImage = new kakao.maps.MarkerImage(
-        'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/markerStar.png',
-        selectedSize,
-        selectedOption
-    );
 }
