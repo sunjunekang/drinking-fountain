@@ -28,6 +28,15 @@ jobs:
         echo SEOUL_API_KEY=${{ secrets.SEOUL_API_KEY }} >> .env
         echo WHAT3WORDS_API_KEY=${{ secrets.WHAT3WORDS_API_KEY }} >> .env
         echo KAKAO_MAP_API_KEY=${{ secrets.KAKAO_MAP_API_KEY }} >> .env
+    
+    - name: Generate Static Fountain Data
+      # 이 스크립트는 서울 API 호출 결과를 JSON 파일로 저장합니다
+      run: node scripts/generate-fountain-data.js
+    
+    - name: Replace API Keys in config.js
+      run: |
+        sed -i "s/__KAKAO_MAP_API_KEY__/${{ secrets.KAKAO_MAP_API_KEY }}/g" public/config.js
+        sed -i "s/__WHAT3WORDS_API_KEY__/${{ secrets.WHAT3WORDS_API_KEY }}/g" public/config.js
       
     - name: Build Project
       run: npm run build
