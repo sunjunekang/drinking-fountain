@@ -1,0 +1,19 @@
+# Node.js 관련 파일
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# 환경변수 파일
+.env
+
+# 운영체제 및 에디터 관련 파일
+.DS_Store
+.vscode/
+.idea/
+
+# 빌드 출력
+dist/
+build/
+
+# 로그 파일
+*.log
