@@ -12,47 +12,17 @@ console.log("app.js 로드됨");
 
 // 페이지 로드 시 실행
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("DOM이 로드되었습니다. API 키 요청 시작...");
+    console.log("DOM이 로드되었습니다.");
     
     // 디버깅 정보 초기화
     const debugStatus = document.getElementById('debug-status');
     if (debugStatus) {
-        debugStatus.innerHTML = "API 키 요청 중...";
+        debugStatus.innerHTML = "카카오맵 스크립트 로딩 중...";
     }
     
-    // 서버에서 API 키 가져오기
-    fetchApiKey();
+    // 카카오맵 스크립트 동적 로드
+    loadKakaoMapScript(KAKAO_MAP_API_KEY);
 });
-
-// 서버에서 API 키를 가져오는 함수
-function fetchApiKey() {
-    console.log("API 키 요청 중...");
-    
-    fetch('/api/config')
-        .then(response => response.json())
-        .then(data => {
-            if (data.error || !data.kakaoMapApiKey) {
-                console.error("API 키를 가져오는데 실패했습니다:", data.error);
-                updateDebugStatus("API 키 로드 실패: " + (data.error || "원인 불명"));
-                return;
-            }
-            
-            console.log("API 키 로드 성공! 길이:", data.kakaoMapApiKey.length);
-            updateDebugStatus("API 키 로드 성공! 카카오맵 스크립트 로딩 중...");
-            
-            // API 키 디버그 정보 업데이트 (보안을 위해 일부만 표시)
-            const apiKey = data.kakaoMapApiKey;
-            document.getElementById('api-key-debug').textContent = 
-                `API 키: ${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)} (${apiKey.length}자)`;
-            
-            // 카카오맵 스크립트 동적 로드
-            loadKakaoMapScript(data.kakaoMapApiKey);
-        })
-        .catch(error => {
-            console.error("API 키 요청 중 오류:", error);
-            updateDebugStatus("API 키 요청 오류: " + error.message);
-        });
-}
 
 // 카카오맵 스크립트를 동적으로 로드하는 함수
 function loadKakaoMapScript(apiKey) {
@@ -197,18 +167,18 @@ function initMap() {
                     // 실패 시 콜백 - 서울 중심으로 유지
                     function(error) {
                         console.log("위치 정보를 가져올 수 없습니다:", error.message);
-                        // 음수대 정보 로드 진행
-                        loadFountains();
+                        // 데모 데이터 로드
+                        loadDemoFountains();
                     }
                 );
             } else {
                 // 위치 정보를 지원하지 않는 브라우저인 경우
                 console.log("이 브라우저는 위치 정보를 지원하지 않습니다.");
-                loadFountains();
+                loadDemoFountains();
             }
             
             // 위치 정보 확인 여부와 관계없이 음수대 정보 로드 시작
-            loadFountains();
+            loadDemoFountains();
         } catch (error) {
             console.error("지도 초기화 과정에서 오류 발생:", error);
             updateDebugStatus(`지도 초기화 오류: ${error.message}`);
@@ -234,15 +204,15 @@ function initMap() {
     }
 }
 
-// 음수대 정보 로드 및 마커 표시 함수
-function loadFountains() {
-    console.log("음수대 정보 로드 시작...");
+// GitHub Pages에서는 샘플 데이터 사용
+function loadDemoFountains() {
+    console.log("데모 음수대 정보 로드 시작...");
     
     // 지도가 로드되지 않았으면 대기
     if (!mapLoaded) {
         console.log("지도가 아직 로드되지 않았습니다. 음수대 로드를 연기합니다.");
         updateDebugStatus("지도 로드 대기 중... 잠시 후 다시 시도합니다.");
-        setTimeout(loadFountains, 1000);
+        setTimeout(loadDemoFountains, 1000);
         return;
     }
     
@@ -251,103 +221,125 @@ function loadFountains() {
     
     updateDebugStatus("음수대 데이터 로딩 중...");
     
-    fetch('/api/water-fountains')
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`서버 응답 오류: ${response.status}`);
-            }
-            return response.json();
-        })
-        .then(fountains => {
-            console.log("서버에서 받은 데이터:", fountains.length + "개");
+    // 기본 예시 데이터 (서울 주요 공원 몇 곳)
+    const demoFountains = [
+        {
+            id: "1",
+            name: "여의도 공원 음수대",
+            address: "서울특별시 영등포구 여의동",
+            location: "여의도 공원 내",
+            lat: 37.5256,
+            lng: 126.9249,
+            what3words: "리뷰.병실.빈도"
+        },
+        {
+            id: "2",
+            name: "올림픽 공원 음수대",
+            address: "서울특별시 송파구 방이동",
+            location: "올림픽 공원 내",
+            lat: 37.5202,
+            lng: 127.1247,
+            what3words: "다가올.내려왔다.파도"
+        },
+        {
+            id: "3",
+            name: "북서울 꿈의 숲 음수대",
+            address: "서울특별시 강북구 번동",
+            location: "북서울 꿈의 숲 내",
+            lat: 37.6202,
+            lng: 127.0449,
+            what3words: "풍요.정류장.계단"
+        },
+        {
+            id: "4",
+            name: "한강 공원 음수대",
+            address: "서울특별시 용산구 이촌동",
+            location: "이촌 한강공원 내",
+            lat: 37.5168,
+            lng: 126.9742,
+            what3words: "입력.안개.발표"
+        },
+        {
+            id: "5",
+            name: "남산 공원 음수대",
+            address: "서울특별시 중구 남산동",
+            location: "남산 공원 내",
+            lat: 37.5512,
+            lng: 126.9882,
+            what3words: "시골.포함.지역"
+        }
+    ];
+    
+    // 기존 마커와 인포윈도우 제거
+    clearMarkers();
+    currentInfoWindow = null;
+    selectedMarker = null;
+    
+    // 음수대 마커 생성
+    demoFountains.forEach(fountain => {
+        try {
+            const position = new kakao.maps.LatLng(fountain.lat, fountain.lng);
             
-            // 기존 마커와 인포윈도우 제거
-            clearMarkers();
-            currentInfoWindow = null;
-            selectedMarker = null;
+            // 마커 생성
+            const marker = new kakao.maps.Marker({
+                position: position,
+                map: map,
+                title: fountain.name || "음수대"
+            });
             
-            // 유효한 데이터가 없는 경우
-            if (!fountains || fountains.length === 0) {
-                console.error("음수대 데이터가 없습니다");
-                updateDebugStatus("음수대 데이터가 없습니다");
-                return;
-            }
+            // 인포윈도우 내용 생성
+            const iwContent = createInfoWindowContent(fountain);
             
-            // 음수대 마커 생성
-            fountains.forEach(fountain => {
-                // 유효한 좌표인지 확인
-                if (fountain.lat && fountain.lng && !isNaN(fountain.lat) && !isNaN(fountain.lng)) {
-                    try {
-                        const position = new kakao.maps.LatLng(fountain.lat, fountain.lng);
-                        
-                        // 마커 생성
-                        const marker = new kakao.maps.Marker({
-                            position: position,
-                            map: map,
-                            title: fountain.name || "음수대"
-                        });
-                        
-                        // 인포윈도우 내용 생성
-                        const iwContent = createInfoWindowContent(fountain);
-                        
-                        // 인포윈도우 생성
-                        const infoWindow = new kakao.maps.InfoWindow({
-                            content: iwContent,
-                            removable: false  // 닫기 버튼 없음 (토글 방식으로 구현)
-                        });
-                        
-                        // 마커 클릭 이벤트 처리 - 토글 방식으로 인포윈도우 표시
-                        kakao.maps.event.addListener(marker, 'click', function() {
-                            // 이미 열려있는 인포윈도우가 있으면 닫기
-                            if (currentInfoWindow) {
-                                currentInfoWindow.close();
-                            }
-                            
-                            // 이전에 선택된 마커가 있으면 기본 이미지로 변경
-                            if (selectedMarker) {
-                                selectedMarker.setImage(defaultMarkerImage);
-                            }
-                            
-                            // 현재 클릭한 마커와 이전에 열려있던 인포윈도우가 동일한 경우
-                            if (currentInfoWindow === infoWindow && selectedMarker === marker) {
-                                // 닫힌 상태로 설정
-                                currentInfoWindow = null;
-                                selectedMarker = null;
-                            } else {
-                                // 새 인포윈도우 열기
-                                infoWindow.open(map, marker);
-                                currentInfoWindow = infoWindow;
-                                
-                                // 선택된 마커 표시
-                                marker.setImage(selectedMarkerImage);
-                                selectedMarker = marker;
-                            }
-                        });
-                        
-                        // 마커 배열에 추가
-                        markers.push(marker);
-                    } catch (error) {
-                        console.error("마커 생성 중 오류:", error, fountain);
-                    }
+            // 인포윈도우 생성
+            const infoWindow = new kakao.maps.InfoWindow({
+                content: iwContent,
+                removable: false  // 닫기 버튼 없음 (토글 방식으로 구현)
+            });
+            
+            // 마커 클릭 이벤트 처리 - 토글 방식으로 인포윈도우 표시
+            kakao.maps.event.addListener(marker, 'click', function() {
+                // 이미 열려있는 인포윈도우가 있으면 닫기
+                if (currentInfoWindow) {
+                    currentInfoWindow.close();
+                }
+                
+                // 이전에 선택된 마커가 있으면 기본 이미지로 변경
+                if (selectedMarker) {
+                    selectedMarker.setImage(defaultMarkerImage);
+                }
+                
+                // 현재 클릭한 마커와 이전에 열려있던 인포윈도우가 동일한 경우
+                if (currentInfoWindow === infoWindow && selectedMarker === marker) {
+                    // 닫힌 상태로 설정
+                    currentInfoWindow = null;
+                    selectedMarker = null;
                 } else {
-                    console.log("유효하지 않은 좌표:", fountain);
+                    // 새 인포윈도우 열기
+                    infoWindow.open(map, marker);
+                    currentInfoWindow = infoWindow;
+                    
+                    // 선택된 마커 표시
+                    marker.setImage(selectedMarkerImage);
+                    selectedMarker = marker;
                 }
             });
             
-            // 지도 확대 레벨에 따라 마커 표시 최적화
-            optimizeMarkers();
-            
-            // 줌 레벨 변경 시 마커 최적화
-            kakao.maps.event.addListener(map, 'zoom_changed', optimizeMarkers);
-            
-            const validMarkers = markers.length;
-            console.log(`총 ${fountains.length}개 중 ${validMarkers}개의 음수대에 마커를 표시했습니다.`);
-            updateDebugStatus(`지도 로딩 완료! ${validMarkers}개의 음수대 표시됨`);
-        })
-        .catch(error => {
-            console.error("음수대 정보 로딩 중 오류:", error);
-            updateDebugStatus(`음수대 데이터 로딩 오류: ${error.message}`);
-        });
+            // 마커 배열에 추가
+            markers.push(marker);
+        } catch (error) {
+            console.error("마커 생성 중 오류:", error, fountain);
+        }
+    });
+    
+    // 지도 확대 레벨에 따라 마커 표시 최적화
+    optimizeMarkers();
+    
+    // 줌 레벨 변경 시 마커 최적화
+    kakao.maps.event.addListener(map, 'zoom_changed', optimizeMarkers);
+    
+    const validMarkers = markers.length;
+    console.log(`총 ${demoFountains.length}개 중 ${validMarkers}개의 음수대에 마커를 표시했습니다.`);
+    updateDebugStatus(`지도 로딩 완료! ${validMarkers}개의 음수대 표시됨 (데모 데이터)`);
 }
 
 // 마커 최적화 함수
@@ -405,123 +397,164 @@ function searchFountain() {
         selectedMarker = null;
     }
 
-    fetch('/api/water-fountains')
-        .then(response => response.json())
-        .then(fountains => {
-            // 검색어로 필터링 (지역명, 주소, 이름, what3words 등)
-            const results = fountains.filter(fountain => 
-                (fountain.name && fountain.name.includes(searchText)) || 
-                (fountain.address && fountain.address.includes(searchText)) ||
-                (fountain.location && fountain.location.includes(searchText)) ||
-                (fountain.what3words && fountain.what3words.includes(searchText))
-            );
+    // 기본 예시 데이터 (서울 주요 공원 몇 곳)
+    const demoFountains = [
+        {
+            id: "1",
+            name: "여의도 공원 음수대",
+            address: "서울특별시 영등포구 여의동",
+            location: "여의도 공원 내",
+            lat: 37.5256,
+            lng: 126.9249,
+            what3words: "리뷰.병실.빈도"
+        },
+        {
+            id: "2",
+            name: "올림픽 공원 음수대",
+            address: "서울특별시 송파구 방이동",
+            location: "올림픽 공원 내",
+            lat: 37.5202,
+            lng: 127.1247,
+            what3words: "다가올.내려왔다.파도"
+        },
+        {
+            id: "3",
+            name: "북서울 꿈의 숲 음수대",
+            address: "서울특별시 강북구 번동",
+            location: "북서울 꿈의 숲 내",
+            lat: 37.6202,
+            lng: 127.0449,
+            what3words: "풍요.정류장.계단"
+        },
+        {
+            id: "4",
+            name: "한강 공원 음수대",
+            address: "서울특별시 용산구 이촌동",
+            location: "이촌 한강공원 내",
+            lat: 37.5168,
+            lng: 126.9742,
+            what3words: "입력.안개.발표"
+        },
+        {
+            id: "5",
+            name: "남산 공원 음수대",
+            address: "서울특별시 중구 남산동",
+            location: "남산 공원 내",
+            lat: 37.5512,
+            lng: 126.9882,
+            what3words: "시골.포함.지역"
+        }
+    ];
 
-            if (results.length > 0) {
-                // 검색 결과 마커만 표시
-                clearMarkers();
+    // 검색어로 필터링 (지역명, 주소, 이름, what3words 등)
+    const results = demoFountains.filter(fountain => 
+        (fountain.name && fountain.name.includes(searchText)) || 
+        (fountain.address && fountain.address.includes(searchText)) ||
+        (fountain.location && fountain.location.includes(searchText)) ||
+        (fountain.what3words && fountain.what3words.includes(searchText))
+    );
+
+    if (results.length > 0) {
+        // 검색 결과 마커만 표시
+        clearMarkers();
+        
+        // 검색 결과의 중심점 계산
+        let sumLat = 0;
+        let sumLng = 0;
+        
+        results.forEach(fountain => {
+            sumLat += fountain.lat;
+            sumLng += fountain.lng;
+            
+            try {
+                const position = new kakao.maps.LatLng(fountain.lat, fountain.lng);
                 
-                // 검색 결과의 중심점 계산
-                let sumLat = 0;
-                let sumLng = 0;
+                // 마커 생성
+                const marker = new kakao.maps.Marker({
+                    position: position,
+                    map: map,
+                    title: fountain.name || "음수대"
+                });
                 
-                results.forEach(fountain => {
-                    sumLat += fountain.lat;
-                    sumLng += fountain.lng;
+                // 인포윈도우 내용 생성
+                const iwContent = createInfoWindowContent(fountain);
+                
+                // 인포윈도우 생성
+                const infoWindow = new kakao.maps.InfoWindow({
+                    content: iwContent,
+                    removable: false  // 닫기 버튼 없음 (토글 방식으로 구현)
+                });
+                
+                // 마커 클릭 이벤트 처리 - 토글 방식으로 인포윈도우 표시
+                kakao.maps.event.addListener(marker, 'click', function() {
+                    // 이미 열려있는 인포윈도우가 있으면 닫기
+                    if (currentInfoWindow) {
+                        currentInfoWindow.close();
+                    }
                     
-                    try {
-                        const position = new kakao.maps.LatLng(fountain.lat, fountain.lng);
+                    // 이전에 선택된 마커가 있으면 기본 이미지로 변경
+                    if (selectedMarker) {
+                        selectedMarker.setImage(defaultMarkerImage);
+                    }
+                    
+                    // 현재 클릭한 마커와 이전에 열려있던 인포윈도우가 동일한 경우
+                    if (currentInfoWindow === infoWindow && selectedMarker === marker) {
+                        // 닫힌 상태로 설정
+                        currentInfoWindow = null;
+                        selectedMarker = null;
+                    } else {
+                        // 새 인포윈도우 열기
+                        infoWindow.open(map, marker);
+                        currentInfoWindow = infoWindow;
                         
-                        // 마커 생성
-                        const marker = new kakao.maps.Marker({
-                            position: position,
-                            map: map,
-                            title: fountain.name || "음수대"
-                        });
-                        
-                        // 인포윈도우 내용 생성
-                        const iwContent = createInfoWindowContent(fountain);
-                        
-                        // 인포윈도우 생성
-                        const infoWindow = new kakao.maps.InfoWindow({
-                            content: iwContent,
-                            removable: false  // 닫기 버튼 없음 (토글 방식으로 구현)
-                        });
-                        
-                        // 마커 클릭 이벤트 처리 - 토글 방식으로 인포윈도우 표시
-                        kakao.maps.event.addListener(marker, 'click', function() {
-                            // 이미 열려있는 인포윈도우가 있으면 닫기
-                            if (currentInfoWindow) {
-                                currentInfoWindow.close();
-                            }
-                            
-                            // 이전에 선택된 마커가 있으면 기본 이미지로 변경
-                            if (selectedMarker) {
-                                selectedMarker.setImage(defaultMarkerImage);
-                            }
-                            
-                            // 현재 클릭한 마커와 이전에 열려있던 인포윈도우가 동일한 경우
-                            if (currentInfoWindow === infoWindow && selectedMarker === marker) {
-                                // 닫힌 상태로 설정
-                                currentInfoWindow = null;
-                                selectedMarker = null;
-                            } else {
-                                // 새 인포윈도우 열기
-                                infoWindow.open(map, marker);
-                                currentInfoWindow = infoWindow;
-                                
-                                // 선택된 마커 표시
-                                marker.setImage(selectedMarkerImage);
-                                selectedMarker = marker;
-                            }
-                        });
-                        
-                        markers.push(marker);
-                    } catch (error) {
-                        console.error("검색 결과 마커 생성 중 오류:", error);
+                        // 선택된 마커 표시
+                        marker.setImage(selectedMarkerImage);
+                        selectedMarker = marker;
                     }
                 });
                 
-                // 검색 결과의 중심으로 지도 이동
-                try {
-                    const centerLat = sumLat / results.length;
-                    const centerLng = sumLng / results.length;
-                    const center = new kakao.maps.LatLng(centerLat, centerLng);
-                    
-                    map.setCenter(center);
-                    
-                    // 검색 결과 수에 따라 줌 레벨 조정
-                    if (results.length === 1) {
-                        map.setLevel(3);
-                    } else if (results.length <= 5) {
-                        map.setLevel(5);
-                    } else {
-                        map.setLevel(7);
-                    }
-                } catch (error) {
-                    console.error("지도 중심 이동 중 오류:", error);
-                }
-                
-                // 검색 결과 갯수 표시
-                document.getElementById('search-result-count').textContent = `검색 결과: ${results.length}개`;
-                document.getElementById('search-result-count').style.display = 'block';
-                updateDebugStatus(`검색 완료: ${results.length}개의 결과 발견`);
-            } else {
-                alert("검색 결과가 없습니다.");
-                document.getElementById('search-result-count').style.display = 'none';
-                updateDebugStatus("검색 결과 없음: " + searchText);
+                markers.push(marker);
+            } catch (error) {
+                console.error("검색 결과 마커 생성 중 오류:", error);
             }
-        })
-        .catch(error => {
-            console.error("검색 중 오류:", error);
-            updateDebugStatus(`검색 중 오류 발생: ${error.message}`);
         });
+        
+        // 검색 결과의 중심으로 지도 이동
+        try {
+            const centerLat = sumLat / results.length;
+            const centerLng = sumLng / results.length;
+            const center = new kakao.maps.LatLng(centerLat, centerLng);
+            
+            map.setCenter(center);
+            
+            // 검색 결과 수에 따라 줌 레벨 조정
+            if (results.length === 1) {
+                map.setLevel(3);
+            } else if (results.length <= 5) {
+                map.setLevel(5);
+            } else {
+                map.setLevel(7);
+            }
+        } catch (error) {
+            console.error("지도 중심 이동 중 오류:", error);
+        }
+        
+        // 검색 결과 갯수 표시
+        document.getElementById('search-result-count').textContent = `검색 결과: ${results.length}개`;
+        document.getElementById('search-result-count').style.display = 'block';
+        updateDebugStatus(`검색 완료: ${results.length}개의 결과 발견`);
+    } else {
+        alert("검색 결과가 없습니다.");
+        document.getElementById('search-result-count').style.display = 'none';
+        updateDebugStatus("검색 결과 없음: " + searchText);
+    }
 }
 
 // 검색 초기화 함수
 function resetSearch() {
     document.getElementById('search-input').value = '';
     document.getElementById('search-result-count').style.display = 'none';
-    loadFountains(); // 원래 상태로 복원
+    loadDemoFountains(); // 원래 상태로 복원
     updateDebugStatus("검색 초기화됨, 모든 음수대 표시 중...");
 }
 
@@ -556,9 +589,6 @@ function testKakaoMapLoad() {
     if (typeof kakao === 'undefined' || typeof kakao.maps === 'undefined') {
         testResult.textContent = "카카오맵 API가 로드되지 않았습니다.";
         testResult.style.color = "red";
-        
-        // API 키 다시 요청 및 로드 시도
-        fetchApiKey();
     } else {
         testResult.textContent = "카카오맵 API가 로드되어 있습니다.";
         testResult.style.color = "green";
@@ -599,18 +629,12 @@ function testKakaoMapLoad() {
             } catch (e) {
                 testResult.textContent += " 좌표 생성 실패: " + e.message;
                 testResult.style.color = "red";
-                
-                // API 키 다시 요청 및 로드 시도
-                if (confirm("카카오맵 API가 올바르게 초기화되지 않았습니다. 다시 로드하시겠습니까?")) {
-                    fetchApiKey();
-                }
             }
         }
     }
 }
 
 // 마커 클릭 시 인포윈도우 내용 생성 함수
-
 function createInfoWindowContent(fountain) {
     // what3words 값 처리
     let what3wordsDisplay = '';
